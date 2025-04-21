@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask + Leaflet</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='leaflet.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='routing.css') }}" />
+
+    <!-- Toastr CSS for styling the messages -->
+    <link href="https://cdn.jsdelivr.net/npm/toastr/build/toastr.min.css" rel="stylesheet" />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        #map {
+            height: 100%;
+            width: 100%;
+            position: relative;
+        }
+        .button-container, .search-container, .grid-button-container {
+            position: absolute;
+            z-index: 1000;
+        }
+        .button-container {
+            bottom: 10px;
+            left: 10px;
+        }
+        .search-container {
+            top: 10px;
+            left: 10px;
+            right: 10px;
+        }
+        .grid-button-container {
+            top: 65%;
+            right: 25px;
+            transform: translateY(-50%);
+        }
+        .ai-button-container {
+            top: 82%;
+            right: 22px;
+            transform: translateY(-50%);
+            position: absolute;
+            z-index: 1000;
+        }
+        .button-container button, .search-container input , .grid-button-container button   {
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .ai-button-container button  {
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .button-container button {
+            background-color: #007BFF;
+            color: white;
+        }
+        .button-container button:hover {
+            background-color: #0056b3;
+        }
+        .search-container input {
+            width: 95%;
+            margin-left: 30px;
+            border-radius: 40px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .grid-button-container button {
+            background-color: #007BFF;
+            color: white;
+        }
+        .grid-button-container button:hover {
+            background-color: #0056b3;
+        }
+        .ai-button-container button {
+            background-color: transparent;
+            color: white;
+        }
+        .ai-button-container button:hover {
+            background-color: transparent;
+        }
+        .ai-button-container button img {
+            width: 30px; /* Adjust the width of the icon */
+            height: 30px; /* Adjust the height of the icon */
+        }
+        /* Custom CSS for the scale control */
+        .leaflet-control-scale {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: white;
+            padding: 5px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        /* Styles for dropdown menu */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            bottom: 100%; /* Position the dropdown above the button */
+            left: 0;
+            background-color: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 5px;
+            width: 200px;
+            padding: 0;
+        }
+        .dropdown-content > div {
+            position: relative;
+        }
+        .dropdown-content > div:hover .submenu {
+            display: block;
+        }
+        .dropdown-content button {
+            display: block;
+            width: 100%;
+            border: none;
+            padding: 10px;
+            text-align: left;
+            background-color: #007BFF;
+            color: white;
+            border-bottom: 1px solid #0056b3;
+            cursor: pointer;
+        }
+        .dropdown-content button:last-child {
+            border-bottom: none;
+        }
+        .dropdown-content button:hover {
+            background-color: #0056b3;
+        }
+        .submenu {
+            display: none;
+            position: absolute;
+            left: 100%;
+            top: 0;
+            background-color: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 5px;
+            width: 200px;
+            padding: 0;
+        }
+        .submenu button {
+            border-bottom: 1px solid #0056b3;
+        }
+        .submenu button:last-child {
+            border-bottom: none;
+        }
+        .submenu button:hover {
+            background-color: #0056b3;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }/* Style for the popup button */
+        .popup-button {
+            position: absolute;
+            top: 92%;
+            left: 45%;
+            background-color: #4CAF50; /* Green */
+            border: none;
+            color: white;
+            border-radius: 10px;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 1001; /* Ensure it's above the map */
+        }
+
+        /* The actual popup */
+        .popup .popuptext {
+            visibility: hidden;
+            width: 250px;
+            height: 50px;
+            background-color: #4CAF50;
+            color: #fff;
+            text-align: center;
+            border-radius: 10px;
+            padding: 8px 0;
+            position: absolute;
+            z-index: 1002; /* Ensure it's above the map */
+            left: 40%;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        /* Toggle this class - hide and show the popup */
+        .popup .show {
+            visibility: visible;
+            opacity: 1;
+        }
+        /*ai-button*/
+        #openai {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.ai-popup {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1003;
+}
+
+.ai-popup-content {
+    background-color: white;
+    padding: 20px;
+    background-color: #007BFF;
+    color: white;
+    border-radius: 5px;
+    text-align: center;
+    z-index: 1004;
+}
+
+.ai-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+
+
+    </style>
+</head>
+<body>
+
+    <!-- by mee -->
+     <!-- Command Dialog -->
+<div id="command-dialog" style="display:none; position: fixed; top: 30%; left: 50%; transform: translate(-50%, -50%);
+background: white; padding: 20px; border: 1px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; border-radius: 8px;">
+  <label for="command-input">Voice Command Detected:</label>
+  <input type="text" id="command-input" placeholder="Command..." style="width: 100%; padding: 8px; margin-top: 8px;" />
+  <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+    <button id="submit-command">Submit</button>
+    <button id="close-command">Close</button>
+  </div>
+</div>
+<!-- end -->
+    
+
+    <div class="popup">
+        <button class="popup-button" onclick="myFunction()">VOXMAP</button>
+        <span class="popuptext" id="myPopup"><p>Welcome to </p><p> VOXMAP! </p></span>
+    </div>
+    <div class="search-container">
+        <input id="searchInput" type="text" placeholder="Search for a place or coordinates..." onkeydown="if(event.key === 'Enter'){search();}">
+    </div>
+    <div id="map" class="leaflet-container"></div>
+
+
+
+    <div class="grid-button-container">
+    <button onclick="toggleBackground()">
+        <img src="https://img.icons8.com/ios/50/000000/grid.png" alt="Grid Icon" />
+    </button>
+</div>
+
+<script src="https://cdn.userway.org/widget.js" data-account="aDJM4sQbtW"></script>
+    <div class="ai-button-container">
+        <button id="openai">
+            <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs" type="module"></script>
+
+    <dotlottie-player src="https://lottie.host/5e6fcf88-2460-40a3-accf-548b49433a85/E89yEFnY57.json" background="transparent" speed="1" style="width: 90px; height: 90px;" loop autoplay></dotlottie-player>
+        </button>
+</div>
+    <div id="ai-popup" class="ai-popup">
+        <div class="ai-popup-content">
+            <span class="ai-close-btn">&times;</span>
+            <p>1. To locate, speak: "locate city_name"</p>
+            <p>2. Zoom in/out, speak: "zoom direction"</p>
+            <p>3. To place marker, speak: "add a marker to city_name"</p>
+            <p>4. To specify speak: "show layer_name"</p>
+            <p>5. To navigate speak: "Navigate city_name1 to city_name2"</p>
+        </div>
+    </div>
+
+    <div class="button-container">
+        <div class="dropdown">
+            <button>Layers</button>
+            <div class="dropdown-content">
+                <button onclick="toggleLayer('landCover')">Land Cover / Land Use</button>
+                <button onclick="toggleLayer('glacialLakes')">Glacial Lakes / Water Bodies</button>
+                <button onclick="toggleLayer('satellite')">Satellite</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='leaflet.js') }}"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/annyang/2.6.1/annyang.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/SpeechKITT/0.3.0/speechkitt.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <script data-goatcounter="https://georocks.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+    <script>
+        var map = L.map('map').setView([20.59, 78.96], 5);
+        if (annyang) {
+        SpeechKITT.annyang();
+        SpeechKITT.setStylesheet('//cdnjs.cloudflare.com/ajax/libs/SpeechKITT/0.3.0/themes/flat-clouds.css');
+        SpeechKITT.setInstructionsText("Try 'Locate Berlin' or 'Zoom in'!");
+        SpeechKITT.vroom();
+        }
+
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18,
+        }).addTo(map);
+
+        var layers = {
+            landCover: L.tileLayer.wms("https://bhuvan-ras2.nrsc.gov.in/cgi-bin/LULC250K.exe", {
+                layers: 'LULC250K_2223',
+                format: 'image/png',
+                transparent: true,
+                attribution: 'Bhoonidhi/Bhuvan WMS service'
+            }),
+            glacialLakes: L.tileLayer.wms("https://bhuvan-vec2.nrsc.gov.in/bhuvan/wms", {
+                layers: 'Indianhimalayas:indianhimalayas_GLWB',
+                format: 'image/png',
+                transparent: true,
+                attribution: 'Bhoonidhi/Bhuvan WMS service'
+            }),
+            satellite:L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            attribution: '&copy; <a href="https://www.google.com/maps/about/versions/">Google Maps</a>',
+            maxZoom: 18
+        }),
+        };
+
+
+        var marker;  // Variable to store the marker
+        var customIcon = L.icon({
+            iconUrl: "{{ url_for('static', filename='images/marker-icon-2x.png') }}",  // Path to your custom icon
+            iconSize: [26, 42],                // Size of the icon
+            iconAnchor: [19, 60],              // Anchor point of the icon
+            popupAnchor: [0, -60]      });        // Anchor point of the popup relative to the icon
+
+        function fetchMarkers() {
+            fetch('/api/markers')
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(markerData => {
+                        // Add a marker with the custom icon
+                        var popupContent = `<b>${markerData.name}</b><br>Latitude: ${markerData.lat}<br>Longitude: ${markerData.lng}`;
+                        L.marker([markerData.lat, markerData.lng], { icon: customIcon }).bindPopup(popupContent).addTo(map);
+                    });
+                });
+        }
+
+        // Call fetchMarkers function to load markers
+        fetchMarkers();
+
+        // Variable to keep track of the layer visibility
+        var activeLayers = {}; // Object to track active layers
+
+function toggleLayer(layerName) {
+    // Check if the layer is currently active
+    if (activeLayers[layerName]) {
+        // If the layer is active, remove it
+        setTimeout(() => {
+            map.removeLayer(activeLayers[layerName]);
+            delete activeLayers[layerName]; // Remove from active layers tracking
+        }, 1000); // Delay of 1 second
+    } else {
+        // If the layer is not active, add it
+        var layerToAdd;
+        switch (layerName) {
+            case 'landCover':
+                layerToAdd = layers.landCover;
+                break;
+            case 'glacialLakes':
+                layerToAdd = layers.glacialLakes;
+                break;
+            case 'satellite':
+                layerToAdd = layers.satellite;
+                break;
+            default:
+                layerToAdd = null;
+        }
+
+        if (layerToAdd) {
+            setTimeout(() => {
+                map.addLayer(layerToAdd);
+                activeLayers[layerName] = layerToAdd; // Add to active layers tracking
+            }, 1000); // Delay of 1 second
+        }
+    }
+}
+
+        function search() {
+            var query = document.getElementById('searchInput').value;
+            var url;
+
+            if (query.trim() === '') {
+                alert('Please enter a search term.');
+                return;
+            }
+
+            // Check if the query is a coordinate or a place name
+            if (/^\s*-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?\s*$/.test(query)) {
+                // If it's a coordinate
+                var coords = query.split(',').map(coord => parseFloat(coord.trim()));
+                var lat = coords[0];
+                var lng = coords[1];
+                zoomToLocation([lat, lng]);
+            } else {
+                // If it's a place name, use Nominatim API to get coordinates
+                url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`;
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            var lat = data[0].lat;
+                            var lng = data[0].lon;
+                            zoomToLocation([lat, lng]);
+                            route(lat,lng);
+                        } else {
+                            alert('No results found for the search term.');
+                        }
+                    });
+            }
+        }
+
+
+        function zoomToLocation(latlng) {
+            if (marker) {
+                map.removeLayer(marker);  // Remove the existing marker if any
+            }
+
+            marker = L.marker(latlng, { icon: customIcon }).addTo(map);
+
+            // Zoom out gradually
+            var currentZoom = map.getZoom();
+            var zoomOutLevel = 5; // Broad level for zooming out
+            var zoomInLevel = 12; // Desired zoom level for the marker
+
+            // Zoom out faster
+            var zoomStep = 0.2;
+            var zoomInterval = 20; // Shorter interval for faster zoom out
+
+            var zoomOutInterval = setInterval(() => {
+                if (currentZoom > zoomOutLevel) {
+                    currentZoom -= zoomStep;
+                    map.setZoom(currentZoom);
+                } else {
+                    clearInterval(zoomOutInterval);
+
+                    // Delay for 1 second before zooming in
+                    setTimeout(() => {
+                        // Center the marker on the screen
+                        map.setView(latlng, currentZoom);
+
+                        // Zoom in gradually while keeping the marker centered
+                        var zoomInStep = 0.1; // Amount to zoom in each step
+                        var zoomInInterval = setInterval(() => {
+                            if (currentZoom < zoomInLevel) {
+                                currentZoom += zoomInStep;
+                                map.setZoom(currentZoom);
+                                map.setView(latlng, currentZoom); // Keep the marker centered
+                            } else {
+                                clearInterval(zoomInInterval);
+                            }
+                        }, zoomInterval);
+                    }, 1000); // 1 second delay
+                }
+            }, zoomInterval);
+        }
+        function toggleBackground() {
+            var mapElement = document.getElementById('map');
+            if (mapElement.style.background === 'black') {
+                mapElement.style.background = '#ddd';
+            } else {
+                mapElement.style.background = 'black';
+            }
+        }
+
+
+        // Add scale control to the bottom right of the map
+        L.control.scale({
+            position: 'bottomright',
+            maxWidth: 200,
+            imperial: false // This shows the scale in metric units
+        }).addTo(map);
+        // When the user clicks on the button, toggle between hiding and showing the popup
+    function myFunction() {
+        var popup = document.getElementById("myPopup");
+        popup.classList.toggle("show");
+    }
+        // Popup button functionality
+        function myFunction() {
+            var popup = document.getElementById("myPopup");
+            popup.classList.toggle("show");
+        }
+
+        function toggleBackground() {
+            var mapElement = document.getElementById('map');
+            var currentBackgroundColor = mapElement.style.backgroundColor;
+            mapElement.style.backgroundColor = currentBackgroundColor === 'transparent' ? 'rgba(0, 0, 0, 0.5)' : 'transparent';
+        }
+
+        // Automatically show popup after 2 seconds and hide after 3 seconds
+        window.onload = function() {
+            setTimeout(function() {
+                var popup = document.getElementById("myPopup");
+                popup.classList.add("show");
+                setTimeout(function() {
+                    popup.classList.remove("show");
+                }, 3000); // Hide after 3 seconds
+            }, 2000); // Show after 2 seconds
+        };
+        function route(a,b){
+        L.Routing.control({
+            waypoints: [
+                L.latLng(a, b),
+                L.latLng(a+1, b+1)
+            ]
+        }).addTo(map);
+        }
+        var mousePosition;
+var markers = []; // Array to store all markers
+
+map.on('mousemove', function(e) {
+    mousePosition = e.latlng;
+});
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'm' || event.key === 'M') {
+        handleMarker();
+    }
+});
+
+function handleMarker() {
+    if (mousePosition) {
+        var markerAtMousePosition = markers.find(marker => marker.getLatLng().equals(mousePosition));
+        if (markerAtMousePosition) {
+            map.removeLayer(markerAtMousePosition);
+            markers = markers.filter(marker => !marker.getLatLng().equals(mousePosition));
+        } else {
+            var newMarker = L.marker(mousePosition, { icon: customIcon }).addTo(map)
+                .bindPopup("New marker at " + mousePosition.toString())
+                .openPopup();
+            markers.push(newMarker);
+        }
+    }
+}
+const flyToCoords = function(city) {
+    const inurl  = "https://nominatim.openstreetmap.org/search?q=" + city + "&limit=1&format=json&addressdetails=1";
+    //  console.log(city);
+    
+    $.when(ajax1()).done(function(data){
+        if (data.length > 0) {
+            map.flyTo([data[0]["lat"], data[0]["lon"]], 12);
+            // by me
+            console.log("About to show alert for city:", city); // This should show in the console
+             toastr.success(`📍Locate ${city}`);
+        } else {
+            // alert("City not found!");
+            toastr.error(` ❌City not found!`);
+        }
+    }).fail(function() {
+        alert("Error fetching data!");
+    });
+
+    function ajax1() {
+        return $.ajax({
+            url: inurl,
+            dataType: "json"
+        });
+    }
+};
+
+const zoomMap = function(direction) {
+  if (direction === 'in') {
+    console.log('🔍zoom in');
+    
+    map.zoomIn();
+    toastr.info('🔍Zoom In');
+  } else if (direction === 'out') {
+    
+    map.zoomOut();
+    toastr.info('🔍Zoom Out');
+  }
+};
+
+const stopListening = function() {
+    annyang.abort();
+};
+
+if (annyang) {
+  const commands = {
+    'hello': () => { alert('Hey there, try some commands!'); },
+    'locate *city': flyToCoords,
+    'zoom *direction': zoomMap,
+    'stop listening': stopListening
+  };
+  annyang.addCommands(commands);
+  annyang.start();
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const openPopupBtn = document.getElementById('openai');
+    const popup = document.getElementById('ai-popup');
+    const closeBtn = document.querySelector('.ai-close-btn');
+
+    openPopupBtn.addEventListener('click', () => {
+        popup.style.display = 'flex';
+    });
+
+    closeBtn.addEventListener('click', () => {
+        popup.style.display = 'none';
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target === popup) {
+            popup.style.display = 'none';
+        }
+    });
+});
+
+    </script>
+    
+    <!-- by me -->
+    <!-- Toastr JS for displaying the flash messages -->
+    <script src="https://cdn.jsdelivr.net/npm/toastr/build/toastr.min.js"></script>
+
+</body>
+</html>
