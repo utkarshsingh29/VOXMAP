@@ -256,20 +256,6 @@
 </head>
 <body>
 
-    <!-- by mee -->
-     <!-- Command Dialog -->
-<div id="command-dialog" style="display:none; position: fixed; top: 30%; left: 50%; transform: translate(-50%, -50%);
-background: white; padding: 20px; border: 1px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; border-radius: 8px;">
-  <label for="command-input">Voice Command Detected:</label>
-  <input type="text" id="command-input" placeholder="Command..." style="width: 100%; padding: 8px; margin-top: 8px;" />
-  <div style="margin-top: 10px; display: flex; justify-content: space-between;">
-    <button id="submit-command">Submit</button>
-    <button id="close-command">Close</button>
-  </div>
-</div>
-<!-- end -->
-    
-
     <div class="popup">
         <button class="popup-button" onclick="myFunction()">VOXMAP</button>
         <span class="popuptext" id="myPopup"><p>Welcome to </p><p> VOXMAP! </p></span>
@@ -300,7 +286,7 @@ background: white; padding: 20px; border: 1px solid #ccc; box-shadow: 0 2px 8px 
             <span class="ai-close-btn">&times;</span>
             <p>1. To locate, speak: "locate city_name"</p>
             <p>2. Zoom in/out, speak: "zoom direction"</p>
-            <p>3. To place marker, speak: "add a marker to city_name"</p>
+            <p>3. To place marker, speak: "add marker to city_name"</p>
             <p>4. To specify speak: "show layer_name"</p>
             <p>5. To navigate speak: "Navigate city_name1 to city_name2"</p>
         </div>
@@ -615,15 +601,94 @@ const zoomMap = function(direction) {
   }
 };
 
+
+const addMarkerToCity=function(city){
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}`;
+
+fetch(url)
+    .then(response => response.json())
+    .then(data => {
+        if (data.length > 0) {
+            const lat = parseFloat(data[0].lat);
+            const lon = parseFloat(data[0].lon);
+            const marker = L.marker([lat, lon], { icon: customIcon })
+                .addTo(map)
+                .bindPopup(`📍 Marker added at ${city}`)
+                .openPopup();
+            markers.push(marker);
+            map.setView([lat, lon], 12); // Zoom to marker
+            toastr.success(`📍 Marker added to ${city}`);
+        } else {
+            toastr.error(`❌ Could not find location: ${city}`);
+        }
+    })
+    .catch(err => {
+        console.error("Error:", err);
+        toastr.error("❌ Error fetching coordinates!");
+    });
+};
+
+
+var currentLayer = null; // Track the current layer
+
+function showLayerByVoice(layerName) {
+  // Normalize the layer name to lower case and trim any extra spaces
+  const normalized = layerName.toLowerCase().trim();
+
+  // Optional: remove plural 's' to improve matching
+  const simplified = normalized.endsWith('s') ? normalized.slice(0, -1) : normalized;
+
+  // Mapping spoken layer names to your actual layers
+  const layerMap = {
+    'land cover': layers.landCover,
+    'glacial lake': layers.glacialLakes,
+    'glacial lakes': layers.glacialLakes, // in case user says it as plural
+    'satellite': layers.satellite
+  };
+
+  // Find the layer from the map
+  const selectedLayer = layerMap[simplified];
+
+  if (selectedLayer) {
+    // If there's already a layer on the map, remove it
+    if (currentLayer) {
+      map.removeLayer(currentLayer);
+    }
+
+    // Add the selected layer to the map
+    selectedLayer.addTo(map);
+    
+    // Update the current layer to the newly added one
+    currentLayer = selectedLayer;
+
+    // Show a success message
+    toastr.success(`Showing layer: ${layerName}`);
+  } else {
+    // If the layer is not found, show an error message
+    toastr.error(`Layer "${layerName}" not found. Try: land cover, glacial lakes, or satellite.`);
+  }
+}
+
+
+
+
+
 const stopListening = function() {
     annyang.abort();
 };
+
+
 
 if (annyang) {
   const commands = {
     'hello': () => { alert('Hey there, try some commands!'); },
     'locate *city': flyToCoords,
     'zoom *direction': zoomMap,
+    
+    'add marker to *city': addMarkerToCity,
+    // change by me..
+    'show *layer': showLayerByVoice, // ✅ Added this line
+    // change end..
     'stop listening': stopListening
   };
   annyang.addCommands(commands);

@@ -1,8 +1,7 @@
 
 
-
-
-
+This is the remote version of the content.
+Maybe it was updated by someone else or from another machine.
 
 ![image](https://github.com/user-attachments/assets/d5fca5ef-7ffa-48aa-8a50-9053bb5f1724)
 ![image](https://github.com/user-attachments/assets/4b28081f-80b4-44ee-913d-319ab73f6b44)
