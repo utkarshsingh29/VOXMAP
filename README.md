@@ -62,8 +62,8 @@ git clone https://github.com/yourusername/voxmap.git
 cd voxmap
 pip install -r requirements.txt
 python app.py
-
 ```
+
 ---
 ## 📖 Usage Guide
 
@@ -93,17 +93,4 @@ We welcome contributions!
 Please **fork** the repository and submit **pull requests**.  
 
 For major changes, open an **issue** first to discuss the proposed updates.
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License**.
-
----
-
-## ✉️ Contact
-
-For inquiries or support: [vikasgup074@gmail.com.com](mailto:your-email@example.com)
-
 
