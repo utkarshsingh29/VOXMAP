@@ -22,14 +22,6 @@ VOXMAP revolutionizes geographic information systems by combining cutting-edge v
 - **Dynamic grid customization**  
 - **Marker placement** for points of interest
 
-### ♿ Universal Accessibility
-- **High Contrast Mode** for enhanced visibility  
-- **Dyslexia-friendly font** options  
-- Adjustable **text size** and **spacing**  
-- Customizable **saturation**, **alignment**, and **cursor** settings  
-- **Animation disable** option for reduced motion  
-- **UserWay** service integration for comprehensive accessibility
-
 ---
 
 ## 💻 Technology Stack
