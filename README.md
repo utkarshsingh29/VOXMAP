@@ -64,6 +64,7 @@ git clone https://github.com/yourusername/voxmap.git
 cd voxmap
 pip install -r requirements.txt
 python app.py
+
 ```
 
 ---
