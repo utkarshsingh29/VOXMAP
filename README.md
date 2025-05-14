@@ -1,5 +1,7 @@
 # VOXMAP - Voice-Activated GIS Mapping Application
 
+![VOXMAP Logo](https://github.com/Vikas9kumargupta/VOXMAP/blob/main/voxmap_/img.png)
+
 ## 🌟 Innovative Voice-Controlled Mapping Solution
 
 VOXMAP revolutionizes geographic information systems by combining cutting-edge voice recognition with comprehensive GIS capabilities. Our web application empowers users to navigate maps, access critical geospatial data, and customize their experience — all through intuitive voice commands and accessibility-focused design.
