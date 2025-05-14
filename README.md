@@ -1,6 +1,6 @@
 # VOXMAP - Voice-Activated GIS Mapping Application
+![Image](https://github.com/user-attachments/assets/e9e6b2c2-9d8b-405e-aa4a-04e0c345f592)
 
-![VOXMAP Logo](https://github.com/Vikas9kumargupta/VOXMAP/blob/main/voxmap_/img.png)
 
 ## 🌟 Innovative Voice-Controlled Mapping Solution
 
